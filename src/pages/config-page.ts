@@ -498,9 +498,23 @@ export const configPage = String.raw`<!doctype html>
     }
 
     async function api(path, options) {
-      const response = await fetch(path, Object.assign({ headers: { "content-type": "application/json" } }, options || {}));
+      let response;
+
+      try {
+        response = await fetch(path, Object.assign({ headers: { "content-type": "application/json" } }, options || {}));
+      } catch (_error) {
+        throw new Error("Nao foi possivel chamar a API do sistema. Confira o deploy no Vercel e abra /api/diagnostics.");
+      }
+
       const text = await response.text();
-      const data = text ? JSON.parse(text) : {};
+      let data = {};
+
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (_error) {
+        throw new Error("A API respondeu algo inesperado. Abra /api/diagnostics no Vercel.");
+      }
+
       if (!response.ok || data.ok === false) throw new Error(data.error || data.message || "Falha na requisicao");
       return data;
     }

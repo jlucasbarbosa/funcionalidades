@@ -124,6 +124,59 @@ function externalApiErrorMessage(error: unknown): string {
   return errorMessage(error);
 }
 
+async function supabaseDiagnostics(): Promise<{
+  ok: boolean;
+  configured: boolean;
+  missingEnv: readonly string[];
+  supabaseReachable: boolean;
+  statusCode: number | null;
+  message: string | null;
+}> {
+  if (!hasRequiredEnv) {
+    return {
+      ok: false,
+      configured: false,
+      missingEnv: missingRequiredEnv,
+      supabaseReachable: false,
+      statusCode: null,
+      message: "Configure as variaveis obrigatorias no Vercel."
+    };
+  }
+
+  try {
+    const url = new URL("/rest/v1/automation_clients", env.supabaseUrl);
+    url.searchParams.set("select", "id");
+    url.searchParams.set("limit", "1");
+
+    const response = await fetch(url, {
+      headers: {
+        apikey: env.supabaseServiceRoleKey,
+        authorization: `Bearer ${env.supabaseServiceRoleKey}`
+      }
+    });
+
+    return {
+      ok: response.ok,
+      configured: true,
+      missingEnv: [],
+      supabaseReachable: true,
+      statusCode: response.status,
+      message: response.ok
+        ? "Supabase conectado."
+        : `Supabase respondeu ${response.status}. Confira URL e service role.`
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      configured: true,
+      missingEnv: [],
+      supabaseReachable: false,
+      statusCode: null,
+      message: errorMessage(error)
+    };
+  }
+}
+
 function publicClient(client: ClientConfig) {
   const { wtsApiToken: _wtsApiToken, ...safeClient } = client;
 
@@ -345,6 +398,17 @@ export async function configRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/api/automation-config", async () => {
+    if (!hasRequiredEnv) {
+      return {
+        activeClientId: null,
+        publicBaseUrl: null,
+        clients: [],
+        configured: false,
+        missingEnv: missingRequiredEnv,
+        warning: `Vercel sem variaveis obrigatorias: ${missingRequiredEnv.join(", ")}`
+      };
+    }
+
     try {
       return publicState(await listClientConfigs());
     } catch (error) {
@@ -357,6 +421,15 @@ export async function configRoutes(app: FastifyInstance): Promise<void> {
         warning: errorMessage(error)
       };
     }
+  });
+
+  app.get("/api/diagnostics", async () => {
+    return {
+      service: "ceci-funcionalidades",
+      environment: env.nodeEnv,
+      redisEnabled: env.redisEnabled,
+      supabase: await supabaseDiagnostics()
+    };
   });
 
   app.get("/api/client-ranking", async (request) => {

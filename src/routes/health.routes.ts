@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { configPage } from "../pages/config-page.js";
+import { hasRequiredEnv, missingRequiredEnv } from "../config/env.js";
 
 export async function healthRoutes(app: FastifyInstance): Promise<void> {
   app.get("/health", async (request, reply) => {
@@ -11,7 +12,9 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
 
     return {
       status: "ok",
-      service: "ceci-funcionalidades"
+      service: "ceci-funcionalidades",
+      configured: hasRequiredEnv,
+      missingEnv: missingRequiredEnv
     };
   });
 }

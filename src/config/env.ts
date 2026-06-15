@@ -8,11 +8,8 @@ const required = [
   "WTS_TRANSFER_SESSION_URL"
 ] as const;
 
-for (const key of required) {
-  if (!process.env[key]) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-}
+export const missingRequiredEnv = required.filter((key) => !process.env[key]);
+export const hasRequiredEnv = missingRequiredEnv.length === 0;
 
 function intEnv(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -31,9 +28,11 @@ export const env = {
   port: intEnv("PORT", 3000),
   host: process.env.HOST ?? "0.0.0.0",
   logLevel: process.env.LOG_LEVEL ?? "info",
-  supabaseUrl: process.env.SUPABASE_URL!,
-  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  wtsTransferSessionUrl: process.env.WTS_TRANSFER_SESSION_URL!,
+  supabaseUrl: process.env.SUPABASE_URL ?? "https://missing.supabase.co",
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "missing-service-role-key",
+  wtsTransferSessionUrl:
+    process.env.WTS_TRANSFER_SESSION_URL ??
+    "https://api.wts.chat/chat/v1/session/{id}/transfer",
   wtsApiToken: process.env.WTS_API_TOKEN,
   wtsTimeoutMs: intEnv("WTS_TIMEOUT_MS", 10_000),
   sessionTimeoutMinutes: intEnv("SESSION_TIMEOUT_MINUTES", 15),

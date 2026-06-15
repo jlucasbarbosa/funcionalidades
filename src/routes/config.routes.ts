@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { env } from "../config/env.js";
+import { env, hasRequiredEnv, missingRequiredEnv } from "../config/env.js";
 import { configPage } from "../pages/config-page.js";
 import {
   appendActionLog,
@@ -69,6 +69,10 @@ type AgentAutomationRulesBody = {
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error) {
+    if (error.message === "fetch failed") {
+      return "Nao foi possivel conectar ao Supabase. Confira SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nas variaveis de ambiente do Vercel.";
+    }
+
     return error.message;
   }
 
@@ -341,7 +345,18 @@ export async function configRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/api/automation-config", async () => {
-    return publicState(await listClientConfigs());
+    try {
+      return publicState(await listClientConfigs());
+    } catch (error) {
+      return {
+        activeClientId: null,
+        publicBaseUrl: null,
+        clients: [],
+        configured: hasRequiredEnv,
+        missingEnv: missingRequiredEnv,
+        warning: errorMessage(error)
+      };
+    }
   });
 
   app.get("/api/client-ranking", async (request) => {

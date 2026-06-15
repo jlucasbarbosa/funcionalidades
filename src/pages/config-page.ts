@@ -427,6 +427,7 @@ export const configPage = String.raw`<!doctype html>
       agentRulesByClientId: {},
       actionLogsCollapsed: false,
       webhookLogsCollapsed: false,
+      configWarning: "",
       sessionPanelLoadId: 0,
       lastRefreshAt: null
     };
@@ -509,7 +510,9 @@ export const configPage = String.raw`<!doctype html>
       state.clients = data.clients || [];
       state.activeClientId = data.activeClientId || (state.clients[0] && state.clients[0].id) || null;
       state.publicBaseUrl = data.publicBaseUrl || "";
+      state.configWarning = data.warning || "";
       render();
+      if (state.configWarning) showAlert(state.configWarning, "bad");
       await loadClientScopedData();
     }
 
@@ -755,6 +758,7 @@ export const configPage = String.raw`<!doctype html>
       state.clients = data.clients || [];
       state.activeClientId = data.activeClientId;
       state.publicBaseUrl = data.publicBaseUrl || "";
+      state.configWarning = data.warning || "";
       render();
       await loadClientScopedData();
       showAlert("Cliente carregado.", "ok");
